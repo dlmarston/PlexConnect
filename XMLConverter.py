@@ -326,7 +326,7 @@ def XML_PMS2aTV(PMS_baseURL, path, options):
         XMLtemplate = 'Library.xml'
     
     elif path=='/channels/all':
-        XMLtemplate = 'Channels.xml'
+        XMLtemplate = 'Channel_'+g_ATVSettings.getSetting(options['PlexConnectUDID'], 'channelview')+'.xml'
         path = ''
     
     # request PMS XML
@@ -956,7 +956,7 @@ class CCommandCollection(CCommandHelper):
         if not PMS_baseURL=='':
             PMS_baseURL = '/PMS(' + quote_plus(PMS_baseURL) + ')'
         
-        res = 'http://' + g_param['HostOfPlexConnect']  # base address to PlexConnect
+        res = g_param['baseURL']  # base address to PlexConnect
         
         if key.endswith('.js'):  # link to PlexConnect owned .js stuff
             res = res + key

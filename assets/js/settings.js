@@ -24,13 +24,24 @@ if( atv.Element ) {
   }
 }
 
+// string extension: format()
+// see http://stackoverflow.com/a/4673436
+if (!String.prototype.format) {
+  String.prototype.format = function() {
+    var args = arguments;
+    return this.replace(/{(\d+)}/g, function(match, number) { 
+      return typeof args[number] != 'undefined' ? args[number] : match;
+    });
+  };
+}
+
 /*
  * update Settings
  */
 function toggleSettings(opt, template) 
 {
   // read new XML
-  var url = "http://atv.plexconnect/&PlexConnect=SettingsToggle:"+ opt + "+" + template + "&PlexConnectUDID="+atv.device.udid
+  var url = "{{URL(/)}}&PlexConnect=SettingsToggle:"+ opt + "+" + template + "&PlexConnectUDID="+atv.device.udid
   var req = new XMLHttpRequest();
   req.open('GET', url, false);
   req.send();
@@ -75,13 +86,13 @@ function discover(opt, template)
   if (!dispval) return undefined;  // error - element not found
   
   // discover - trigger PlexConnect, ignore response
-  var url = "http://atv.plexconnect/&PlexConnect=Discover&PlexConnectUDID="+atv.device.udid
+  var url = "{{URL(/)}}&PlexConnect=Discover&PlexConnectUDID="+atv.device.udid
   var req = new XMLHttpRequest();
   req.open('GET', url, false);
   req.send();
   
   // read new XML
-  var url = "http://atv.plexconnect/&PlexConnect="+ template + "&PlexConnectUDID="+atv.device.udid
+  var url = "{{URL(/)}}&PlexConnect="+ template + "&PlexConnectUDID="+atv.device.udid
   var req = new XMLHttpRequest();
   req.open('GET', url, false);
   req.send();
@@ -101,7 +112,7 @@ function discover(opt, template)
  */
 function refreshLibrary(addrPMS) 
 {
-	atv.loadURL("http://atv.plexconnect/RefreshLibrary.xml");
+	atv.loadURL("{{URL(/RefreshLibrary.xml)}}");
 	var url = "http://" + addrPMS + "/library/sections/all/refresh";
 	var req = new XMLHttpRequest();
 	req.open('GET', url, true);
@@ -148,7 +159,7 @@ myPlexSignInOut = function()
     // discover - trigger PlexConnect, ignore response
     reqDiscover = function()
     {
-        var url = "http://atv.plexconnect/&PlexConnect=Discover&PlexConnectUDID="+atv.device.udid
+        var url = "{{URL(/)}}&PlexConnect=Discover&PlexConnectUDID="+atv.device.udid
         var req = new XMLHttpRequest();
         req.open('GET', url, false);
     req.send();
@@ -178,7 +189,7 @@ myPlexSignInOut = function()
         gotUsername = function(value)
         {
             _username = value;
-            showTextEntryPage('password', '{{TEXT(MyPlex Password)}}', '{{TEXT(Enter the MyPlex password for )}}'+_username, gotPassword, gotCancel, null);
+            showTextEntryPage('password', '{{TEXT(MyPlex Password)}}', '{{TEXT(Enter the MyPlex password for {0}.)}}'.format(_username), gotPassword, gotCancel, null);
         };
         
         gotPassword = function(value)
@@ -196,7 +207,7 @@ myPlexSignInOut = function()
         doLogin = function()
         {
             // login and get new settings page
-            var url = "http://atv.plexconnect/" + 
+            var url = "{{URL(/)}}" + 
                       "&PlexConnect=MyPlexLogin" +
                       "&PlexConnectCredentials=" + encodeURIComponent(_username+':'+_password) +
                       "&PlexConnectUDID=" + atv.device.udid
@@ -236,7 +247,7 @@ myPlexSignInOut = function()
     SignOut = function()
     {
         // logout and get new settings page
-        var url = "http://atv.plexconnect/" + 
+        var url = "{{URL(/)}}" + 
                   "&PlexConnect=MyPlexLogout" +
                   "&PlexConnectUDID=" + atv.device.udid
         var req = new XMLHttpRequest();

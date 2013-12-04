@@ -88,13 +88,13 @@ case $1 in
         if daemon_status; then
             echo ${DNAME} is already running
         else
-            echo Starting ${DNAME} ...
+            echo Starting ${DNAME}...
             start_daemon
         fi
         ;;
     stop)
         if daemon_status; then
-            echo Stopping ${DNAME} ...
+            echo Stopping ${DNAME}...
             stop_daemon
         else
             echo ${DNAME} is not running

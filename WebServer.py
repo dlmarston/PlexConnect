@@ -25,6 +25,7 @@ import signal
 import Settings, ATVSettings
 from Debug import *  # dprint()
 import XMLConverter  # XML_PMS2aTV, XML_PlayVideo
+import re
 import Localize
 
 
@@ -33,6 +34,22 @@ g_param = {}
 def setParams(param):
     global g_param
     g_param = param
+
+
+
+def JSConverter(file, options):
+    f = open(sys.path[0] + "/assets/js/" + file)
+    JS = f.read()
+    f.close()
+    
+    # PlexConnect {{URL()}}->baseURL
+    for path in set(re.findall(r'\{\{URL\((.+?)\)\}\}', JS)):
+        JS = JS.replace('{{URL(%s)}}' % path, g_param['baseURL']+path)
+    
+    # localization
+    JS = Localize.replaceTEXT(JS, options['aTVLanguage']).encode('utf-8')
+    
+    return JS
 
 
 
@@ -121,7 +138,14 @@ class MyHandler(BaseHTTPRequestHandler):
                     else:
                         # absolute path
                         cfg_certfile = g_param['CSettings'].getSetting('certfile')
-                    f = open(path.splitext(cfg_certfile)[0] + '.cer', "rb")
+                    
+                    cfg_certfile = path.splitext(cfg_certfile)[0] + '.cer'
+                    try:
+                        f = open(cfg_certfile, "rb")
+                    except:
+                        dprint(__name__, 0, "Failed to access certificate: {0}", cfg_certfile)
+                        return
+                    
                     self.send_response(200)
                     self.send_header('Content-type', 'text/xml')
                     self.end_headers()
@@ -130,14 +154,20 @@ class MyHandler(BaseHTTPRequestHandler):
                     return 
                 
                 # serve .js files to aTV
-                if self.path.endswith(".js"):
-                    dprint(__name__, 1, "serving  " + sys.path[0] + sep + "assets" + self.path.replace('/',sep).replace('appletv\us\\', '').replace('appletv/us/', ''))
-                    f = open(sys.path[0] + sep + "assets" + self.path.replace('/',sep).replace('appletv\us\\', '').replace('appletv/us/', ''))
+                # application, main: ignore path, send /assets/js/application.js
+                # otherwise: path should be '/js', send /assets/js/*.js
+                dirname = path.dirname(self.path)
+                basename = path.basename(self.path)
+                if basename in ("application.js", "main.js", "javascript-packed.js") or \
+                   basename.endswith(".js") and dirname == '/js':
+                    if basename in ("main.js", "javascript-packed.js"):
+                        basename = "application.js"
+                    dprint(__name__, 1, "serving /js/{0}", basename)
+                    JS = JSConverter(basename, options)
                     self.send_response(200)
                     self.send_header('Content-type', 'text/javascript')
                     self.end_headers()
-                    self.wfile.write(Localize.replaceTEXT(f.read(), options['aTVLanguage']).encode('utf-8'))
-                    f.close()
+                    self.wfile.write(JS)
                     return
                 
                 # serve "*.jpg" - thumbnails for old-style mainpage
@@ -297,8 +327,10 @@ if __name__=="__main__":
     cfg = Settings.CSettings()
     param = {}
     param['CSettings'] = cfg
+    
+    param['IP_self'] = '192.168.178.20'  # IP_self?
+    param['baseURL'] = 'http://'+ param['IP_self'] +':'+ cfg.getSetting('port_webserver')
     param['HostToIntercept'] = 'trailers.apple.com'
-    param['HostOfPlexConnect'] = 'atv.plexconnect'
     
     if len(sys.argv)==1:
         Run(cmdPipe[1], param)
